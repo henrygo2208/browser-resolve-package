@@ -36,7 +36,6 @@ async function onSearch(keyword) {
   loading.value = false
 
   data.value = res.objects
-  console.log(res.objects)
 }
 
 function goDetail(name) {

@@ -1,47 +1,64 @@
 import untar from 'js-untar'
 import pako from 'pako'
+import localdb from './indexDB'
+
+export function bufferToString(array) {
+  var res = ''
+  var chunk = 8 * 1024
+  var i
+  for (i = 0; i < array.length / chunk; i++) {
+    res += String.fromCharCode.apply(null, array.slice(i * chunk, (i + 1) * chunk))
+  }
+  res += String.fromCharCode.apply(null, array.slice(i * chunk))
+  return res
+}
 
 export async function queryPackages(keyword) {
   const response = await fetch(`https://registry.npmjs.org/-/v1/search?text=${keyword}`)
   return await response.json()
 }
 
-export async function zipPackages(packageUrls) {
-  for (let i = 0; i < packageUrls.length; i++) {
-    const url = packageUrls[i]
-    const res = await fetch(url)
+const db = await localdb.openDB('npm-pkgs')
+
+async function getPackage(packageUrl) {
+  const fileName = packageUrl.split('/').reverse()[0]
+  const pkgName = fileName.substring(0, fileName.lastIndexOf('.'))
+
+  const pkg = await localdb.getDataByKey(db, 'packages', pkgName)
+
+  let ungzipData
+  if (pkg) {
+    ungzipData = pkg['content']
+  } else {
+    const res = await fetch(packageUrl)
+
     const data = await res.arrayBuffer()
-    // let files = new window.File([blob], packageUrls[0].split('/').reverse()[0], { type: 'zip' })
-    // const data = await JSZipUtils.getBinaryContent(url)
-    // compressing.gzip.uncompress()
-    // console.log(data)
-    // const file = await zip.loadAsync(data).then(console.log)
 
-    // const buffer = await res.arrayBuffer()
-    // const dirName = url.split('/').reverse()[0].split('.')[0]
+    ungzipData = await pako.ungzip(data)
 
-    const uzip = await pako.ungzip(data)
-    // // 解压缩
-    // try {
-    //   await compressing.gzip.uncompress(buffer, `${dirName}.tar`)
-    //   await compressing.tar.uncompress(`${dirName}.tar`, dirName)
-    //   console.log('success')
-    // } catch (err) {
-    //   console.error(err)
-    // }
-    untar(uzip.buffer).then(console.log)
-
-    return
+    localdb.addData(db, 'packages', { name: pkgName, content: ungzipData })
   }
+
+  return ungzipData
+}
+
+export async function zipPackages(packageUrl) {
+  const data = await getPackage(packageUrl)
+
+  const files = await untar(data.buffer)
+
+  console.log('untar files', files)
+
+  return files
 }
 
 export async function downloadPackage(packageUrl) {
-  //https://registry.npmjs.org/postcss/-/postcss-8.4.16.tgz
-  const res = await fetch(packageUrl)
-  const resp = await res.blob()
+  const pkgName = packageUrl.split('/').reverse()[0]
+
+  const data = await getPackage(packageUrl)
 
   const url = window.URL.createObjectURL(
-    new Blob([resp], {
+    new Blob([data], {
       type: 'application/octet-stream',
     })
   )
@@ -50,7 +67,7 @@ export async function downloadPackage(packageUrl) {
   a.style.display = 'none'
   a.href = url
 
-  a.setAttribute('download', packageUrl.split('/').reverse()[0])
+  a.setAttribute('download', pkgName.replace('tgz', 'zip'))
   document.body.appendChild(a)
 
   a.click()
@@ -61,7 +78,7 @@ export async function getPackageDependencies(pname) {
   const data = {
     nodes: [],
     edges: [],
-    urls: [],
+    root: null,
   }
 
   data.nodes.push({
@@ -82,9 +99,9 @@ export async function getPackageDependencies(pname) {
 
     const { dependencies, peerDependencies, dist } = remoteData.versions[remoteData['dist-tags']['latest']]
 
-    if (!dependencies) return
+    if (!data.root) data.root = dist
 
-    if (dist) data.urls.push(dist['tarball'])
+    if (!dependencies) return
 
     Object.assign(dependencies, peerDependencies)
 
