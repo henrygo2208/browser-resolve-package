@@ -2,15 +2,18 @@
 import G6 from '@antv/g6'
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { getPackageDependencies } from '../utils/npm'
+import { getPackageDependencies, zipPackages } from '../utils/npm'
 
-const loading = ref(false)
+const loading = ref(false),
+  downloadUrls = ref([])
 const router = useRouter()
 
 onMounted(async () => {
   loading.value = true
   const data = await getPackageDependencies(router.currentRoute.value.query.name)
   loading.value = false
+
+  downloadUrls.value = data.urls
 
   G6.registerNode(
     'sql',
@@ -141,7 +144,10 @@ onMounted(async () => {
 })
 </script>
 <template>
-  <a-spin :spinning="loading"> <div id="container"></div></a-spin>
+  <a-spin :spinning="loading">
+    <a @click="zipPackages(downloadUrls)">下载</a>
+    <div id="container"></div
+  ></a-spin>
 </template>
 <style lang="less">
 #container {

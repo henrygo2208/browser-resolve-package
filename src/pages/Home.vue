@@ -3,8 +3,10 @@
     <a-input-search v-model:value="value" placeholder="搜索包" enter-button="Search" size="large" @search="onSearch" />
     <a-list item-layout="horizontal" :data-source="data" :loading="loading" class="package-list">
       <template #renderItem="{ item }">
-        <a-typography class="package-list-item" @click="goDetail(item.package.name)">
-          <a-typography-title :level="3">{{ item.package.name }}</a-typography-title>
+        <a-typography class="package-list-item">
+          <a-typography-title :level="3" @click="goDetail(item.package.name)">{{
+            item.package.name
+          }}</a-typography-title>
           <a-typography-paragraph>
             {{ item.package.description }}
           </a-typography-paragraph>
@@ -13,6 +15,7 @@
               {{ word }}
             </a-tag>
           </div>
+          <!-- <div @click="downloadPackage(item.package.name)">下载包</div> -->
         </a-typography>
       </template>
     </a-list>
@@ -21,7 +24,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { queryPackages } from '../utils/npm'
+import { queryPackages, downloadPackage } from '../utils/npm'
 const value = ref(''),
   loading = ref(false),
   data = ref([])
