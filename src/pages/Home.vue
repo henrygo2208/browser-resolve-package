@@ -1,7 +1,13 @@
 <template>
   <div>
-    <a-input-search v-model:value="value" placeholder="搜索包" enter-button="Search" size="large" @search="onSearch" />
-    <a-list item-layout="horizontal" :data-source="data" :loading="loading" class="package-list">
+    <a-input-search
+      v-model:value="store.keyword"
+      placeholder="搜索包"
+      enter-button="Search"
+      size="large"
+      @search="() => store.search()"
+    />
+    <a-list item-layout="horizontal" :data-source="store.list" :loading="store.loading" class="package-list">
       <template #renderItem="{ item }">
         <a-typography class="package-list-item">
           <a-typography-title :level="3" @click="goDetail(item.package.name)">{{
@@ -15,28 +21,17 @@
               {{ word }}
             </a-tag>
           </div>
-          <!-- <div @click="downloadPackage(item.package.name)">下载包</div> -->
         </a-typography>
       </template>
     </a-list>
   </div>
 </template>
 <script setup>
-import { ref } from 'vue'
+import useStore from '../store/index'
 import { useRouter } from 'vue-router'
-import { queryPackages, downloadPackage } from '../utils/npm'
-const value = ref(''),
-  loading = ref(false),
-  data = ref([])
-const router = useRouter()
 
-async function onSearch(keyword) {
-  loading.value = true
-  const res = await queryPackages(keyword)
-  loading.value = false
-
-  data.value = res.objects
-}
+const router = useRouter(),
+  store = useStore()
 
 function goDetail(name) {
   router.push({ name: 'detail', query: { name } })

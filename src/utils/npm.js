@@ -11,6 +11,7 @@ export function bufferToString(array) {
   }
   res += String.fromCharCode.apply(null, array.slice(i * chunk))
   return res
+  // return String.fromCharCode.apply(null, array)
 }
 
 export async function queryPackages(keyword) {
@@ -75,6 +76,11 @@ export async function downloadPackage(packageUrl) {
 }
 
 export async function getPackageDependencies(pname) {
+  const cacheData = localStorage.getItem(pname)
+  if (cacheData) {
+    return JSON.parse(cacheData)
+  }
+
   const data = {
     nodes: [],
     edges: [],
@@ -85,7 +91,7 @@ export async function getPackageDependencies(pname) {
     id: pname,
     name: pname,
     dataType: 'alps',
-    conf: [{ label: 'version', value: 'selectable' }],
+    conf: [],
   })
 
   async function resolvePackageDependencies(pname) {
@@ -99,7 +105,11 @@ export async function getPackageDependencies(pname) {
 
     const { dependencies, peerDependencies, dist } = remoteData.versions[remoteData['dist-tags']['latest']]
 
-    if (!data.root) data.root = dist
+    if (!data.root) {
+      // 设置根节点
+      data.root = dist
+      data.nodes[0].conf.push({ label: 'version', value: remoteData['dist-tags']['latest'] })
+    }
 
     if (!dependencies) return
 
@@ -123,6 +133,8 @@ export async function getPackageDependencies(pname) {
   }
 
   await resolvePackageDependencies(pname)
+
+  localStorage.setItem(pname, JSON.stringify(data))
 
   return data
 }

@@ -1,7 +1,7 @@
 <script setup>
 import G6 from '@antv/g6'
 import { computed } from '@vue/reactivity'
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, isRef } from 'vue'
 import { useRouter } from 'vue-router'
 import { getPackageDependencies, zipPackages, downloadPackage, bufferToString } from '../utils/npm'
 
@@ -152,8 +152,12 @@ onMounted(async () => {
 let tempFiles
 
 async function upzipPkg() {
+  loading.value = true
+
   const files = await zipPackages(downloadUrl.value)
   tempFiles = files
+
+  loading.value = false
 
   pkgFiles.value = files.map(f => {
     const pathAry = f.name.split('/')
@@ -163,23 +167,24 @@ async function upzipPkg() {
       name: pathAry[pathAry.length - 1],
       path: f.name,
       parent: pathAry.slice(0, pathAry.length - 1).join('/'),
+      level: pathAry.length,
     }
   })
 
-  // 构建树结构之前，补全数据结构：目录文件
-  for (let i = 0; i < pkgFiles.value.length; i++) {
-    const item = pkgFiles.value[i]
-    const dir = pkgFiles.value.find(f => f.path === item.parent)
+  // // 构建树结构之前，补全数据结构：目录文件
+  // for (let i = 0; i < pkgFiles.value.length; i++) {
+  //   const item = pkgFiles.value[i]
+  //   const dir = pkgFiles.value.find(f => f.path === item.parent)
 
-    if (!dir) {
-      const dirPath = item.parent.split('/')
-      pkgFiles.value.unshift({
-        name: dirPath[dirPath.length - 1],
-        path: item.parent,
-        parent: dirPath.slice(0, dirPath.length - 1).join('/'),
-      })
-    }
-  }
+  //   if (!dir) {
+  //     const dirPath = item.parent.split('/')
+  //     pkgFiles.value.unshift({
+  //       name: dirPath[dirPath.length - 1],
+  //       path: item.parent,
+  //       parent: dirPath.slice(0, dirPath.length - 1).join('/'),
+  //     })
+  //   }
+  // }
 
   treeData.value = buildTree()
 
@@ -191,10 +196,34 @@ const modelTitle = computed(() => {
   return fileName.substring(0, fileName.lastIndexOf('.'))
 })
 
-function buildTree(root = 'package') {
-  const nodes = pkgFiles.value.filter(f => f.parent === root)
+function buildTree(root = 'package', level = 1) {
+  const nodes = pkgFiles.value.filter(f => f.path.indexOf(root) > -1 && f.level === level + 1)
+  const subNodes = pkgFiles.value.filter(f => f.path.indexOf(root) > -1 && f.level === level + 2)
 
-  return nodes.map(c => ({ title: c.name, key: c.path, children: buildTree(c.path) }))
+  subNodes.forEach(item => {
+    const dir = nodes.find(f => f.path === item.parent)
+
+    if (!dir) {
+      const dirPath = item.parent.split('/')
+      nodes.unshift({
+        name: dirPath[dirPath.length - 1],
+        path: item.parent,
+        parent: dirPath.slice(0, dirPath.length - 1).join('/'),
+        added: true,
+      })
+    }
+  })
+
+  const res = nodes.map(c => ({
+    title: c.name,
+    key: c.path,
+    isLeaf: !c.added && !!pkgFiles.value.find(f => f.path.indexOf(c.path) < 0),
+    level,
+  }))
+
+  console.log(res, nodes, subNodes)
+
+  return res
 }
 
 async function onSelect(keys) {
@@ -214,6 +243,12 @@ function onLoadData(treeNode) {
       resolve()
       return
     }
+
+    console.log(treeNode)
+
+    treeNode.dataRef.children = buildTree(treeNode.key, treeNode.level + 1)
+
+    treeData.value = [...treeData.value]
 
     resolve()
   })
@@ -235,7 +270,7 @@ function onLoadData(treeNode) {
     >
       <a-row>
         <a-col :span="6">
-          <a-tree :tree-data="treeData" @select="onSelect"> </a-tree>
+          <a-tree :tree-data="treeData" @select="onSelect" :load-data="onLoadData"> </a-tree>
         </a-col>
         <a-col :span="18">
           <!-- <pre>{{ text }} </pre> -->
