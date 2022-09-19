@@ -217,11 +217,9 @@ function buildTree(root = 'package', level = 1) {
   const res = nodes.map(c => ({
     title: c.name,
     key: c.path,
-    isLeaf: !c.added && !!pkgFiles.value.find(f => f.path.indexOf(c.path) < 0),
+    isLeaf: !c.added && subNodes.findIndex(f => f.path.indexOf(c.path) > -1) < 0,
     level,
   }))
-
-  console.log(res, nodes, subNodes)
 
   return res
 }
@@ -256,11 +254,17 @@ function onLoadData(treeNode) {
 </script>
 <template>
   <a-spin :spinning="loading">
-    <a-space align="center">
-      <a-typography-title :level="3">依赖关系图</a-typography-title>
-      <a @click="downloadPackage(downloadUrl)">下载到本地</a>
-      <a @click="upzipPkg">查看包内容</a>
-    </a-space>
+    <a-page-header
+      style="padding: 0"
+      title="依赖关系图"
+      sub-title="第一次加载或查看包内容时可能会比较慢，之后会飞起来"
+      @back="() => $router.go(-1)"
+    >
+      <template #extra>
+        <a @click="downloadPackage(downloadUrl)">下载到本地</a>
+        <a @click="upzipPkg">查看包内容</a>
+      </template>
+    </a-page-header>
     <a-modal
       v-model:visible="modalVisible"
       :title="modelTitle"
