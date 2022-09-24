@@ -28,7 +28,7 @@ deep3 --> deep5[package.json]
   - [Dagre](https://github.com/dagrejs/dagre)
   - [D3.js](https://github.com/d3/d3)
   - [Mermaid.js](https://github.com/mermaid-js/mermaid)
-  - [Sigma.js](https://www.sigmajs.org/)
+  - [Sigma.js](https://github.com/jacomyal/sigma.js)
   - [AntV G6](https://antv-2018.alipay.com/zh-cn/g6/3.x/index.html)
 
 ## 结果
@@ -44,14 +44,25 @@ deep3 --> deep5[package.json]
   - 包依赖的结构数据放入localStorage
   - 包文件内容数据放入indexDB
 - 绘制依赖图的可视化方案选型
-  - Dagre是绘制流程图的底层库，主要是用来计算图的元素布局，使用它再结合图形库，如D3、Mermaid，就能实现一个绘制流程图的图可视化库，G6的Dagre流程图布局也是基于它
+  - Dagre 是绘制流程图的底层库，主要是用来计算图的元素布局，使用它再结合图形库，如D3、Mermaid，就能实现一个绘制流程图的图可视化库，G6的Dagre流程图布局也是基于它
   - D3.js数据驱动框架，提供了大量诸如地理、几何、布局、时间、行为等等API，可灵活绘制的图表、关系图和流程图等各种图形，但自然也足够复杂
   - Mermaid.js量级更轻，主要是以声明的方式来绘制各种流程图，但功能相对简单
   - Sigma.js的功能丰富，实现的图可视化不仅类型更多，还能包含复杂的用户交互效果
   - AntV G6：与Sigma.js类似，阿里的图可视化解决方案
-    - 有落地实践经验
-    - 功能强大，流程布局可满足功能要求
-    - 易维护，有配套的中文文档
+
+| 对比 | D3.js | Mermaid.js | Sigma.js | AntV G6 |
+| --- | ----- | ------- | ----- | ------- |
+| 活跃度 | 103k stars | 50.1k stars | 10.1k stars | 9.2k stars |
+| 扩展定制化 | 中 | 低 | 高 | 高 |
+| 可靠度 | 高 | 高 | 高 | 高 |
+| 易维护 | 中 | 高 | 中 | 中 | 
+| 功能覆盖度 | 非常广 | 较少 | 丰富 | 丰富 |
+
+综合考虑，选择AntV G6的原因
+- 项目组有落地实践经验
+- 有大厂阿里背书
+- 功能足够强大，流程布局可满足功能要求
+- 配套的中文文档全面易懂，社区活跃度较高
   
 ### 页面预览
 - ![首页](home.png "项目首页")
